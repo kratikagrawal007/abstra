@@ -255,13 +255,14 @@ function Toolbar() {
 }
 
 function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true); // dark is the default theme
   useEffect(() => setDark(document.documentElement.dataset.theme === "dark"), []);
   return (
     <button
       onClick={() => {
         const next = dark ? "light" : "dark";
         document.documentElement.dataset.theme = next;
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", next === "light" ? "#f6f5f2" : "#121216");
         try {
           localStorage.setItem("abstra:theme", next);
         } catch {}

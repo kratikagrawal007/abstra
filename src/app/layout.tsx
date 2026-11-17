@@ -23,10 +23,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f5f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#121216" },
-  ],
+  // Dark is the default theme; the toggle updates this tag when switching.
+  themeColor: "#121216",
 };
 
 // Latin subsets (self-hosted at build) are ~3x smaller than the full Geist files,
@@ -36,11 +34,12 @@ const GeistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans", dis
 const GeistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap", preload: false });
 
 // Apply saved theme before paint to avoid a flash.
-const themeScript = `try{var t=(localStorage.getItem("abstra:theme")||localStorage.getItem("shapeform:theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}`;
+// Dark by default (set on <html> below). A saved choice from the theme toggle wins, applied before paint.
+const themeScript = `try{var t=(localStorage.getItem("abstra:theme")||localStorage.getItem("shapeform:theme"));if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="light"?"#f6f5f2":"#121216"}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="light" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme="dark" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
