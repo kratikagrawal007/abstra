@@ -10,9 +10,9 @@ export interface Palette {
 
 /** Curated palettes: ink reads clearly on background; colours 2–3 work as gradient ends and layer tones. */
 export const PALETTES: readonly Palette[] = [
-  { name: "Ink", background: "#ffffff", color: "#1c1b22", color2: "#4f46e5", color3: "#e4572e" },
+  { name: "Ink", background: "#ffffff", color: "#1c1b22", color2: "#358e4a", color3: "#e4572e" },
   { name: "Paper", background: "#f4efe6", color: "#2b2a28", color2: "#c8553d", color3: "#588b8b" },
-  { name: "Night", background: "#0f1020", color: "#f2f1ee", color2: "#8b85ff", color3: "#3ddbd9" },
+  { name: "Night", background: "#0f1020", color: "#f2f1ee", color2: "#5fc076", color3: "#3ddbd9" },
   { name: "Citrus", background: "#fff8e7", color: "#ff6b35", color2: "#f7c548", color3: "#2e294e" },
   { name: "Mint", background: "#e9f5f0", color: "#1b4332", color2: "#40916c", color3: "#95d5b2" },
   { name: "Bloom", background: "#fff0f3", color: "#c9184a", color2: "#ff758f", color3: "#590d22" },

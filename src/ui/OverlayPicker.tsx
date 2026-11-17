@@ -197,7 +197,7 @@ export function OverlayPicker({ value, onChange }: { value: string; onChange: (i
                     <Tile id={item.id} size="lg" />
                     <span className="min-w-0 flex-1">
                       {selected ? (
-                        <span className="mb-1 inline-block rounded-full bg-accent-soft px-2 py-0.5 text-[12px] font-semibold text-accent">Current</span>
+                        <span className="mb-1 inline-block rounded-full bg-accent-soft px-2 py-0.5 text-[12px] font-semibold text-accent-ink">Current</span>
                       ) : (
                         <span className="block font-mono text-[12px] tracking-wide text-ink-3">{item.code}</span>
                       )}

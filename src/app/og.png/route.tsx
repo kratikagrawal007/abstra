@@ -37,7 +37,7 @@ export async function GET() {
           {TILES.map(([family, style, stroke], i) => (
             <div
               key={family}
-              style={{ width: 170, height: 170, borderRadius: 24, background: i === 1 ? "#4f46e5" : "#ffffff", border: "1px solid #e6e3dc", display: "flex" }}
+              style={{ width: 170, height: 170, borderRadius: 24, background: i === 1 ? "#358e4a" : "#ffffff", border: "1px solid #e6e3dc", display: "flex" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={artDataUri(family, style, i === 1 ? "#ffffff" : "#1c1b22", stroke ? { stroke } : {})} width={170} height={170} alt="" />

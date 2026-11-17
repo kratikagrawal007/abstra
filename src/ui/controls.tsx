@@ -192,7 +192,7 @@ export function Toggle({ label, checked, onChange, hint }: { label: string; chec
   );
 }
 
-const SWATCHES = ["#1c1b22", "#ffffff", "#4f46e5", "#e4572e", "#17a398", "#f2c14e", "#d1495b", "#00798c"];
+const SWATCHES = ["#1c1b22", "#ffffff", "#358e4a", "#e4572e", "#17a398", "#f2c14e", "#d1495b", "#00798c"];
 
 export function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const id = useId();

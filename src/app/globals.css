@@ -12,9 +12,11 @@
   --ink: #1c1b22;
   --ink-2: #5d5b66;
   --ink-3: #6b6873;
-  --accent: #4f46e5;
-  --accent-soft: #eceafd;
-  --on-accent: #ffffff;
+  --accent: #358e4a;
+  /* accent as text: darker so small text passes WCAG AA on light surfaces */
+  --accent-ink: #27713a;
+  --accent-soft: #e4f1e7;
+  --on-accent: #071209;
   /* Logo mark inside the accent tile: white in both themes */
   --logo-mark: #ffffff;
   --shadow: 0 1px 2px rgb(28 27 34 / 0.06), 0 12px 32px -12px rgb(28 27 34 / 0.18);
@@ -30,9 +32,11 @@
   --ink: #f2f1ee;
   --ink-2: #b2b0ba;
   --ink-3: #9a98a3;
-  --accent: #8b85ff;
-  --accent-soft: #2a2850;
-  --on-accent: #121216;
+  --accent: #358e4a;
+  /* accent as text: brighter so small text passes WCAG AA on dark surfaces */
+  --accent-ink: #5fc076;
+  --accent-soft: #1a3321;
+  --on-accent: #071209;
   --logo-mark: #ffffff;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
   color-scheme: dark;
@@ -48,6 +52,7 @@
   --color-ink-3: var(--ink-3);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-on-accent: var(--on-accent);
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;

@@ -127,7 +127,7 @@ function FamilyGrid() {
   }, [family]);
   const chip = (on: boolean) =>
     `min-h-[28px] shrink-0 rounded-full border px-2.5 text-[12px] font-medium transition ${
-      on ? "border-accent bg-accent-soft text-accent" : "border-line text-ink-3 hover:text-ink"
+      on ? "border-accent bg-accent-soft text-accent-ink" : "border-line text-ink-3 hover:text-ink"
     }`;
   return (
     <div>
@@ -179,7 +179,7 @@ function FamilyGrid() {
                         title={f.name}
                         onClick={() => setFamily(f.id)}
                         className={`group flex flex-col items-center gap-1 rounded-lg border px-1.5 pt-2 pb-1.5 transition ${
-                          on ? "border-accent bg-accent-soft text-accent" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
+                          on ? "border-accent bg-accent-soft text-accent-ink" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
                         }`}
                       >
                         <FamilyIcon id={f.id} className="h-11 w-11 transition group-hover:scale-105" />
@@ -248,7 +248,7 @@ function PalettePicker() {
             const pool = PALETTES.filter((p) => p !== active);
             update(paletteColors(pool[Math.floor(Math.random() * pool.length)]));
           }}
-          className="flex min-h-[26px] items-center gap-1 rounded-md px-2 text-[12px] font-medium text-accent hover:bg-accent-soft"
+          className="flex min-h-[26px] items-center gap-1 rounded-md px-2 text-[12px] font-medium text-accent-ink hover:bg-accent-soft"
         >
           <Icon name="dice" size={14} /> Shuffle
         </button>

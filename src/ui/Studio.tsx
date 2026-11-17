@@ -183,7 +183,7 @@ function Recent() {
             key={v}
             onClick={() => setView(v)}
             aria-pressed={view === v}
-            className={`min-h-[28px] rounded-md px-2 font-medium ${view === v ? "bg-accent-soft text-accent" : "text-ink-3"}`}
+            className={`min-h-[28px] rounded-md px-2 font-medium ${view === v ? "bg-accent-soft text-accent-ink" : "text-ink-3"}`}
           >
             {v === "recent" ? "Recent" : `Saved ${favorites.length || ""}`}
           </button>
@@ -218,7 +218,7 @@ function ToolButton({ icon, label, onClick, disabled, active, primary, className
       title={label}
       aria-pressed={active}
       className={`flex h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition disabled:opacity-35 ${className} ${
-        primary ? "bg-accent text-on-accent hover:opacity-90 sm:px-4" : active ? "bg-accent-soft text-accent" : "text-ink-2 hover:bg-panel-2 hover:text-ink"
+        primary ? "bg-accent text-on-accent hover:opacity-90 sm:px-4" : active ? "bg-accent-soft text-accent-ink" : "text-ink-2 hover:bg-panel-2 hover:text-ink"
       }`}
     >
       <Icon name={icon} size={17} filled={active && icon === "star"} />

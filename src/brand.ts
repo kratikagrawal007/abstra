@@ -7,7 +7,7 @@ export const LOGO_PATHS = [
 ];
 
 /** The mark on a rounded tile. `scale` is the mark's share of the tile. */
-export function logoSvg({ tile = "#4f46e5", mark = "#ffffff", scale = 0.62, radius = 60 } = {}): string {
+export function logoSvg({ tile = "#358e4a", mark = "#ffffff", scale = 0.62, radius = 60 } = {}): string {
   const t = 128 - 128 * scale;
   const paths = LOGO_PATHS.map((d) => `<path d="${d}"/>`).join("");
   return (

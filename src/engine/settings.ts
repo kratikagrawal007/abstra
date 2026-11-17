@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   warp: 0.6,
   stroke: 3,
   color: "#1c1b22",
-  color2: "#4f46e5",
+  color2: "#358e4a",
   color3: "#e4572e",
   fill: "flat",
   gradientAngle: 45,
