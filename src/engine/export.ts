@@ -6,7 +6,7 @@ export function svgFile(s: Settings): string {
 }
 
 export function fileName(s: Settings, ext: string) {
-  return `shapeform-${s.family}-${s.seed}.${ext}`.replace(/[^a-z0-9._-]/gi, "-");
+  return `abstra-${s.family}-${s.seed}.${ext}`.replace(/[^a-z0-9._-]/gi, "-");
 }
 
 export function downloadBlob(blob: Blob, name: string) {

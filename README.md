@@ -1,6 +1,8 @@
-# Shapeform
+# Abstra
 
 Browser-based studio for abstract marks, shapes and line art. 54 shape families, five styles, seeded variations, shareable URLs, SVG and PNG export. No account, no tracking; everything runs client-side.
+
+**Live:** https://abstra-omega.vercel.app
 
 ## Develop
 
@@ -17,7 +19,7 @@ npm run preview    # serve out/ locally with gzip, like a real host
 
 ## Deploy
 
-The build is a fully static site in `out/`. Set `NEXT_PUBLIC_SITE_URL` (e.g. `https://shapeform.app`) at build time so canonical URLs, the sitemap and social cards point at your domain.
+The build is a fully static site in `out/`. Set `NEXT_PUBLIC_SITE_URL` (e.g. `https://abstra.app`) at build time so canonical URLs, the sitemap and social cards point at your domain.
 
 | Host | Setup |
 |---|---|

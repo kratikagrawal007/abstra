@@ -201,7 +201,7 @@ function ThemeToggle() {
         const next = dark ? "light" : "dark";
         document.documentElement.dataset.theme = next;
         try {
-          localStorage.setItem("shapeform:theme", next);
+          localStorage.setItem("abstra:theme", next);
         } catch {}
         setDark(!dark);
       }}

@@ -34,10 +34,11 @@ interface StudioState {
   notify(msg: string): void;
 }
 
-const FAV_KEY = "shapeform:favorites";
+const FAV_KEY = "abstra:favorites";
+const LEGACY_FAV_KEY = "shapeform:favorites"; // pre-rename key, read once as a fallback
 const readFavs = (): Settings[] => {
   try {
-    const raw = localStorage.getItem(FAV_KEY);
+    const raw = localStorage.getItem(FAV_KEY) ?? localStorage.getItem(LEGACY_FAV_KEY);
     return raw ? (JSON.parse(raw) as Partial<Settings>[]).map(sanitize) : [];
   } catch {
     return [];
@@ -100,7 +101,7 @@ export const useStudio = create<StudioState>((set, get) => {
     },
     applySeed(seed) {
       const { settings, keepFamily } = get();
-      commit(settingsFromSeed(settings, seed.trim() || "shapeform", keepFamily), true);
+      commit(settingsFromSeed(settings, seed.trim() || "abstra", keepFamily), true);
     },
     reset() {
       commit(withFamily({ ...DEFAULT_SETTINGS, seed: get().settings.seed }, get().settings.family), true);

@@ -19,7 +19,7 @@ export const LIMITS = {
 export type NumericKey = keyof typeof LIMITS;
 
 export const DEFAULT_SETTINGS: Settings = {
-  seed: "shapeform",
+  seed: "abstra",
   family: "rosette",
   style: "solid",
   frequency: 5,

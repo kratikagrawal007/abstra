@@ -256,7 +256,7 @@ export function Sidebar() {
       <header className="hidden items-center gap-2.5 px-5 pt-5 pb-3 md:flex">
         <Logo />
         <div>
-          <div className="text-[15px] font-semibold tracking-tight">Shapeform</div>
+          <div className="text-[15px] font-semibold tracking-tight">Abstra</div>
           <div className="text-[12px] text-ink-3">Abstract mark studio</div>
         </div>
       </header>

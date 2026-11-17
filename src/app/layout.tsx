@@ -36,7 +36,7 @@ const GeistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans", dis
 const GeistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap", preload: false });
 
 // Apply saved theme before paint to avoid a flash.
-const themeScript = `try{var t=localStorage.getItem("shapeform:theme");if(t)document.documentElement.dataset.theme=t}catch(e){}`;
+const themeScript = `try{var t=(localStorage.getItem("abstra:theme")||localStorage.getItem("shapeform:theme"));if(t)document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
