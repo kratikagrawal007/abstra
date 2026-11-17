@@ -16,7 +16,8 @@
   /* accent as text: darker so small text passes WCAG AA on light surfaces */
   --accent-ink: #27713a;
   --accent-soft: #e4f1e7;
-  --on-accent: #071209;
+  /* text/icons on green buttons */
+  --on-accent: #ffffff;
   /* Logo mark inside the accent tile: white in both themes */
   --logo-mark: #ffffff;
   --shadow: 0 1px 2px rgb(28 27 34 / 0.06), 0 12px 32px -12px rgb(28 27 34 / 0.18);
@@ -36,7 +37,8 @@
   /* accent as text: brighter so small text passes WCAG AA on dark surfaces */
   --accent-ink: #5fc076;
   --accent-soft: #1a3321;
-  --on-accent: #071209;
+  /* text/icons on green buttons */
+  --on-accent: #ffffff;
   --logo-mark: #ffffff;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
   color-scheme: dark;
