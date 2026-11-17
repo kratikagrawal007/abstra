@@ -597,7 +597,7 @@ export function Sidebar() {
         <span>
           Made by{" "}
           <a
-            href="https://github.com/kratikagrawal007"
+            href="https://kratikdesigns.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-ink-2 underline decoration-line underline-offset-2 hover:text-ink hover:decoration-ink-3"
