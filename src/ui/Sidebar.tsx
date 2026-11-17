@@ -19,8 +19,10 @@ import {
   videoFormat,
 } from "@/engine/export";
 import { encodeSettings } from "@/engine/url-state";
-import { ColorField, Section, Segmented, SelectField, Slider, Toggle } from "./controls";
+import { ColorField, Section, Segmented, Slider, Toggle } from "./controls";
 import { Icon } from "./icons";
+import { FamilyIcon } from "./FamilyIcon";
+import { OverlayPicker } from "./OverlayPicker";
 import { LOGO_PATHS } from "@/brand";
 
 const TABS = ["Shape", "Finish", "Compose", "Export"] as const;
@@ -129,21 +131,7 @@ function FamilyGrid() {
                       on ? "border-accent bg-accent-soft text-accent" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
                     }`}
                   >
-                    {/* Static SVG used as a mask so the thumbnail takes the current text colour. */}
-                    <span
-                      aria-hidden="true"
-                      className="aspect-square w-full bg-current transition group-hover:scale-105"
-                      style={{
-                        maskImage: `url(/thumbs/${f.id}.svg)`,
-                        WebkitMaskImage: `url(/thumbs/${f.id}.svg)`,
-                        maskSize: "contain",
-                        WebkitMaskSize: "contain",
-                        maskRepeat: "no-repeat",
-                        WebkitMaskRepeat: "no-repeat",
-                        maskPosition: "center",
-                        WebkitMaskPosition: "center",
-                      }}
-                    />
+                    <FamilyIcon id={f.id} className="aspect-square w-full transition group-hover:scale-105" />
                     <span className="w-full truncate text-center text-[12px] leading-tight">{f.name}</span>
                   </button>
                 );
@@ -290,12 +278,7 @@ function ComposeTab() {
         <NumberSlider k="aspect" label="Aspect" />
       </Section>
       <Section title="Overlay">
-        <SelectField
-          label="Overlay family"
-          value={s.overlay}
-          options={[{ value: "none", label: "None" }, ...FAMILIES.map((f) => ({ value: f.id, label: f.name }))]}
-          onChange={(v) => update({ overlay: v })}
-        />
+        <OverlayPicker value={s.overlay} onChange={(v) => update({ overlay: v })} />
         {s.overlay !== "none" && (
           <>
             <NumberSlider k="overlayScale" label="Overlay scale" />
