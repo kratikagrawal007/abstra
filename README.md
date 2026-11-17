@@ -67,4 +67,4 @@ Lighthouse on the production build (served with gzip): mobile Performance 97, de
 
 ## Shortcuts
 
-`R`/`Space` randomize · `[` `]` previous/next family · `1`–`5` style · `F` save · `P` play/pause animation · `⌘Z` / `⇧⌘Z` undo/redo · `⌘S` download SVG · `?` help
+`R`/`Space` randomize · double-click any slider to type a value · `[` `]` previous/next family · `1`–`5` style · `F` save · `P` play/pause animation · `⌘Z` / `⇧⌘Z` undo/redo · `⌘S` download SVG · `?` help

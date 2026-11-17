@@ -30,6 +30,18 @@ type Tab = (typeof TABS)[number];
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
+/** For a section's settings: whether any differ from their defaults, and a reset that restores them. */
+function useSectionReset(keys: (keyof Settings)[]) {
+  const s = useStudio((x) => x.settings);
+  const update = useStudio((x) => x.update);
+  const famDefaults = getFamily(s.family).defaults as unknown as Partial<Settings>;
+  const def = (k: keyof Settings) => (k in famDefaults ? famDefaults[k] : DEFAULT_SETTINGS[k]);
+  return {
+    dirty: keys.some((k) => s[k] !== def(k)),
+    onReset: () => update(Object.fromEntries(keys.map((k) => [k, def(k)])) as Partial<Settings>),
+  };
+}
+
 function NumberSlider({ k, label, unit }: { k: NumericKey; label: string; unit?: string }) {
   const value = useStudio((s) => s.settings[k]);
   const family = useStudio((s) => s.settings.family);
@@ -153,7 +165,7 @@ function FamilyGrid() {
               <div key={g} className="pb-2">
                 {group === "all" && (
                   <h3 className="sticky top-0 z-[1] -mx-0.5 mb-1 bg-panel/95 px-0.5 py-1 text-[12px] font-medium text-ink-3 backdrop-blur">
-                    {cap(g)} <span className="tabular-nums opacity-80">· {list.length}</span>
+                    {cap(g)} <span className="tabular-nums">· {list.length}</span>
                   </h3>
                 )}
                 <div className="grid grid-cols-3 gap-1.5" role="group" aria-label={`${cap(g)} families`}>
@@ -212,7 +224,7 @@ function ShapeTab() {
       <Section title="Family">
         <FamilyGrid />
       </Section>
-      <Section title="Geometry">
+      <Section title="Geometry" {...useSectionReset(["style", "frequency", "detail", "phase", "warp"])}>
         <Segmented label="Style" value={s.style} options={STYLES.map((v) => ({ value: v, label: cap(v) }))} onChange={(v) => update({ style: v })} />
         <NumberSlider k="frequency" label={f.labels.frequency} />
         <NumberSlider k="detail" label={f.labels.detail} />
@@ -273,7 +285,7 @@ function FinishTab() {
   const usesC2 = s.fill !== "flat" || s.layerColors;
   return (
     <>
-      <Section title="Colour">
+      <Section title="Colour" {...useSectionReset(["color", "background", "color2", "color3"])}>
         <PalettePicker />
         <ColorField label="Ink" value={s.color} onChange={(v) => update({ color: v })} />
         <ColorField label="Background" value={s.background} onChange={(v) => update({ background: v })} />
@@ -284,7 +296,7 @@ function FinishTab() {
           Swap ink and background
         </button>
       </Section>
-      <Section title="Fill">
+      <Section title="Fill" {...useSectionReset(["fill", "gradientAngle"])}>
         <Segmented
           label="Ink fill"
           value={s.fill}
@@ -298,7 +310,7 @@ function FinishTab() {
         {usesC2 && <ColorField label="Colour 2" value={s.color2} onChange={(v) => update({ color2: v })} />}
         {s.layerColors && <ColorField label="Colour 3" value={s.color3} onChange={(v) => update({ color3: v })} />}
       </Section>
-      <Section title="Line">
+      <Section title="Line" {...useSectionReset(["stroke", "cap"])}>
         <NumberSlider k="stroke" label="Stroke" />
         <Segmented label="Line ends" value={s.cap} options={CAPS.map((v) => ({ value: v, label: cap(v) }))} onChange={(v) => update({ cap: v })} />
       </Section>
@@ -325,7 +337,7 @@ function ComposeTab() {
   const update = useStudio((st) => st.update);
   return (
     <>
-      <Section title="Repeat">
+      <Section title="Repeat" {...useSectionReset(["layers", "spacing", "layerColors", "copies", "rotation", "aspect"])}>
         <NumberSlider k="layers" label="Layers" />
         <NumberSlider k="spacing" label="Layer spacing" />
         <LayerColorsToggle />
@@ -333,7 +345,7 @@ function ComposeTab() {
         <NumberSlider k="rotation" label="Rotation" unit="°" />
         <NumberSlider k="aspect" label="Aspect" />
       </Section>
-      <Section title="Overlay">
+      <Section title="Overlay" {...useSectionReset(["overlay", "overlayScale", "overlayRotation"])}>
         <OverlayPicker value={s.overlay} onChange={(v) => update({ overlay: v })} />
         {s.overlay !== "none" && (
           <>
@@ -373,7 +385,7 @@ function ImageExport() {
   const update = useStudio((st) => st.update);
   const { busy, run } = useTask();
   return (
-    <Section title="Image">
+    <Section title="Image" {...useSectionReset(["transparent", "size"])}>
       <Toggle label="Transparent background" hint="Applies to SVG and PNG" checked={s.transparent} onChange={(v) => update({ transparent: v })} />
       <Segmented label="PNG size" value={s.size} options={PNG_SIZES.map((v) => ({ value: v, label: `${v}px` }))} onChange={(v) => update({ size: v })} />
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -409,7 +421,7 @@ function AnimationExport() {
   const { busy, run } = useTask();
   const canRecord = typeof window !== "undefined" && videoFormat() !== null;
   return (
-    <Section title="Animation">
+    <Section title="Animation" {...useSectionReset(["anim", "animDur"])}>
       <Segmented label="Animate" value={s.anim} options={ANIMS.map((v) => ({ value: v, label: cap(v) }))} onChange={(v) => update({ anim: v })} />
       {s.anim !== "none" && (
         <>
@@ -536,7 +548,7 @@ function ExportTab() {
 export function Sidebar() {
   const [tab, setTab] = useState<Tab>("Shape");
   return (
-    <aside className="flex h-full min-h-0 flex-col border-line bg-panel md:border-r">
+    <aside className="flex h-full min-h-0 flex-col bg-panel md:rounded-2xl md:shadow-[0_0_0_1px_rgb(0_0_0/0.05),0_12px_40px_-16px_rgb(0_0_0/0.22)] dark:md:shadow-[0_0_0_1px_rgb(255_255_255/0.06),0_12px_40px_-16px_rgb(0_0_0/0.7)]">
       <header className="hidden items-center gap-2.5 px-5 pt-5 pb-3 md:flex">
         <Logo />
         <div>
@@ -575,12 +587,26 @@ export function Sidebar() {
           </button>
         ))}
       </div>
-      <div id="tabpanel" role="tabpanel" tabIndex={0} aria-labelledby={`tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto pb-24 md:pb-6">
+      <div id="tabpanel" role="tabpanel" tabIndex={0} aria-labelledby={`tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto pb-4">
         {tab === "Shape" && <ShapeTab />}
         {tab === "Finish" && <FinishTab />}
         {tab === "Compose" && <ComposeTab />}
         {tab === "Export" && <ExportTab />}
       </div>
+      <footer className="flex shrink-0 items-center justify-between border-t border-line/70 px-4 py-2.5 text-[12px] text-ink-3">
+        <span>
+          Made by{" "}
+          <a
+            href="https://github.com/kratikagrawal007"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-ink-2 underline decoration-line underline-offset-2 hover:text-ink hover:decoration-ink-3"
+          >
+            Kratik
+          </a>
+        </span>
+        <span className="font-mono">v1.1</span>
+      </footer>
     </aside>
   );
 }

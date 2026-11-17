@@ -75,7 +75,7 @@ function Toast() {
     return () => clearTimeout(t);
   }, [toast]);
   return (
-    <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-4 z-20 flex justify-center">
+    <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-16 z-20 flex justify-center">
       {shown && <div key={shown + Date.now()} className="pop-in rounded-full bg-ink px-3.5 py-1.5 text-[12px] font-medium text-paper elev">{shown}</div>}
     </div>
   );
@@ -176,7 +176,7 @@ function Recent() {
   const [view, setView] = useState<"recent" | "saved">("recent");
   const list = view === "recent" ? recent : favorites;
   return (
-    <div className="flex items-center gap-3 py-0 pt-4 pr-24 pl-4">
+    <div className="flex min-w-0 flex-1 items-center gap-3">
       <div className="flex shrink-0 rounded-lg bg-panel p-0.5 text-[12px] elev">
         {(["recent", "saved"] as const).map((v) => (
           <button
@@ -237,10 +237,6 @@ function Toolbar() {
         <ToolButton icon="dice" label="Randomize" primary onClick={st.randomize} />
         <ToolButton icon={st.keepFamily ? "lock" : "unlock"} label={st.keepFamily ? "Family locked" : "Lock family"} active={st.keepFamily} onClick={() => st.setKeepFamily(!st.keepFamily)} />
         <Sep />
-        <ToolButton icon="undo" label="Undo" disabled={!st.past.length} onClick={st.undo} />
-        <ToolButton icon="redo" label="Redo" disabled={!st.future.length} onClick={st.redo} />
-        <ToolButton icon="reset" label="Reset family defaults" onClick={st.reset} className="max-sm:hidden" />
-        <Sep />
         <ToolButton icon="star" label={isFav ? "Unsave" : "Save"} active={isFav} onClick={st.toggleFavorite} />
         <ToolButton
           icon="link"
@@ -273,9 +269,9 @@ function ThemeToggle() {
       }}
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
       title={dark ? "Light theme" : "Dark theme"}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-ink-2 elev hover:text-ink"
+      className="flex size-8 items-center justify-center rounded-lg text-ink-2 transition-colors hover:bg-panel-2 hover:text-ink"
     >
-      <Icon name={dark ? "sun" : "moon"} size={17} />
+      <Icon name={dark ? "sun" : "moon"} size={16} />
     </button>
   );
 }
@@ -345,37 +341,113 @@ function useDevHook() {
   }, []);
 }
 
+function HeaderButton({ label, onClick, disabled, children, className = "" }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode; className?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex size-8 items-center justify-center rounded-lg text-ink-2 transition-colors hover:bg-panel-2 hover:text-ink disabled:pointer-events-none disabled:opacity-35 ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Top bar over the canvas: recent strip on the left; history + view actions on the right. */
+function Header({ onHelp }: { onHelp: () => void }) {
+  const canUndo = useStudio((s) => s.past.length > 0);
+  const canRedo = useStudio((s) => s.future.length > 0);
+  const undo = useStudio((s) => s.undo);
+  const redo = useStudio((s) => s.redo);
+  const reset = useStudio((s) => s.reset);
+  return (
+    <header className="relative z-10 flex items-center gap-3 px-4 pt-3 md:pt-4">
+      <Recent />
+      <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-line bg-panel/90 p-1 backdrop-blur elev">
+        <HeaderButton label="Undo (⌘Z)" onClick={undo} disabled={!canUndo}>
+          <Icon name="undo" size={16} />
+        </HeaderButton>
+        <HeaderButton label="Redo (⇧⌘Z)" onClick={redo} disabled={!canRedo}>
+          <Icon name="redo" size={16} />
+        </HeaderButton>
+        {canUndo && (
+          <button
+            onClick={reset}
+            title="Reset shape to family defaults"
+            className="pop-in flex h-8 items-center gap-1.5 rounded-lg px-2 text-[13px] font-medium text-ink-2 transition-colors hover:bg-panel-2 hover:text-ink max-sm:hidden"
+          >
+            <Icon name="reset" size={15} />
+            Reset
+          </button>
+        )}
+        <span className="mx-0.5 h-5 w-px bg-line" />
+        <HeaderButton label="Keyboard shortcuts (?)" onClick={onHelp} className="font-mono text-[14px] max-md:hidden">
+          ?
+        </HeaderButton>
+        <ThemeToggle />
+      </div>
+    </header>
+  );
+}
+
+/** Feeds the pointer position to the workspace spotlight (mouse only; touch has no hover). */
+function useSpotlight(ref: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    let x = 0;
+    let y = 0;
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const r = el.getBoundingClientRect();
+      x = e.clientX - r.left;
+      y = e.clientY - r.top;
+      if (!raf)
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          el.style.setProperty("--spot-x", `${x}px`);
+          el.style.setProperty("--spot-y", `${y}px`);
+          el.style.setProperty("--spot-o", "1");
+        });
+    };
+    const leave = () => el.style.setProperty("--spot-o", "0");
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerleave", leave);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerleave", leave);
+    };
+  }, [ref]);
+}
+
 export function Studio() {
   useDevHook();
   const [help, setHelp] = useState(false);
   const [sheet, setSheet] = useState(false);
   const toggleHelp = useCallback(() => setHelp((h) => !h), []);
   const closeHelp = useCallback(() => setHelp(false), []);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useSpotlight(rootRef);
   useUrlSync();
   useShortcuts(toggleHelp, closeHelp);
   return (
     <div
-      className="studio-grid grid h-dvh grid-rows-[minmax(0,1fr)_var(--sheet)] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-1"
+      ref={rootRef}
+      className="workspace studio-grid relative grid h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_var(--sheet)] md:grid-cols-[352px_minmax(0,1fr)] md:grid-rows-1"
       style={{ ["--sheet" as string]: sheet ? "60dvh" : "42dvh" }}
     >
-      <main className="dot-grid relative flex min-h-0 flex-col md:order-2">
+      <div aria-hidden="true" className="workspace-spot" />
+      <main className="relative flex min-h-0 flex-col md:order-2">
         <Toast />
-        <div className="absolute top-4 right-4 z-10 flex gap-1.5">
-          <button
-            onClick={toggleHelp}
-            aria-label="Keyboard shortcuts"
-            title="Keyboard shortcuts (?)"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel font-mono text-[14px] text-ink-2 elev hover:text-ink max-md:hidden"
-          >
-            ?
-          </button>
-          <ThemeToggle />
-        </div>
-        <Recent />
+        <Header onHelp={toggleHelp} />
         <Artboard />
         <Toolbar />
       </main>
-      <div className="flex min-h-0 flex-col rounded-t-2xl border-t border-line bg-panel shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.2)] md:order-1 md:rounded-none md:border-t-0 md:shadow-none">
+      <div className="relative flex min-h-0 flex-col rounded-t-2xl border-t border-line bg-panel shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.2)] md:order-1 md:rounded-none md:border-t-0 md:bg-transparent md:py-3 md:pl-3 md:shadow-none">
         <button
           onClick={() => setSheet((v) => !v)}
           aria-expanded={sheet}

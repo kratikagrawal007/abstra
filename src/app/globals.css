@@ -5,6 +5,7 @@
 :root {
   --paper: #f6f5f2;
   --dot: #d9d6cf;
+  --dot-strong: rgb(28 27 34 / 0.42);
   --panel: #ffffff;
   --panel-2: #f3f2ee;
   --line: #e6e3dc;
@@ -20,6 +21,7 @@
 [data-theme="dark"] {
   --paper: #121216;
   --dot: #2a2a31;
+  --dot-strong: rgb(255 255 255 / 0.42);
   --panel: #1a1a20;
   --panel-2: #232329;
   --line: #2e2e36;
@@ -177,4 +179,25 @@ kbd {
 .spin-art > svg {
   animation: spin-art var(--spin-dur, 6s) linear infinite;
   transform-origin: 50% 50%;
+}
+
+/* Workspace: quiet dot grid + a cursor "flashlight" that darkens the dots and adds a faint accent glow.
+   --spot-x / --spot-y / --spot-o are set from pointer moves (mouse only). */
+.workspace {
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+}
+.workspace-spot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--spot-o, 0);
+  transition: opacity 300ms ease;
+  background-image:
+    radial-gradient(var(--dot-strong) 1px, transparent 1.3px),
+    radial-gradient(280px at var(--spot-x, -999px) var(--spot-y, -999px), color-mix(in srgb, var(--accent) 9%, transparent), transparent);
+  background-size: 16px 16px, 100% 100%;
+  -webkit-mask-image: radial-gradient(180px at var(--spot-x, -999px) var(--spot-y, -999px), #000, transparent);
+  mask-image: radial-gradient(180px at var(--spot-x, -999px) var(--spot-y, -999px), #000, transparent);
 }
