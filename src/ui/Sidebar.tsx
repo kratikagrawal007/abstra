@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStudio } from "@/store/studio";
 import { FAMILIES, getFamily } from "@/engine/families";
 import { DEFAULT_SETTINGS, LIMITS, type NumericKey } from "@/engine/settings";
@@ -87,6 +87,32 @@ function FamilyGrid() {
   const visible = FAMILIES.filter(
     (f) => (group === "all" || f.group === group) && (!q || f.name.toLowerCase().includes(q) || f.group.includes(q)),
   );
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ top: true, bottom: false });
+  const updateEdges = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setEdges({ top: el.scrollTop < 4, bottom: el.scrollTop + el.clientHeight >= el.scrollHeight - 4 });
+  };
+  // New filter → back to the top.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+    updateEdges();
+  }, [query, group]);
+  // Keep the selected family visible inside the list (also when changed with [ / ] or Randomize),
+  // scrolling only this container, never the sidebar.
+  useEffect(() => {
+    const el = scrollRef.current;
+    const btn = el?.querySelector<HTMLElement>(`[data-family="${family}"]`);
+    if (!el || !btn) return;
+    const header = 28;
+    const top = btn.offsetTop - header;
+    const bottom = btn.offsetTop + btn.offsetHeight;
+    if (top < el.scrollTop || bottom > el.scrollTop + el.clientHeight) {
+      el.scrollTo({ top: Math.max(0, btn.offsetTop - el.clientHeight / 2 + btn.offsetHeight / 2), behavior: "smooth" });
+    }
+    updateEdges();
+  }, [family]);
   const chip = (on: boolean) =>
     `min-h-[28px] shrink-0 rounded-full border px-2.5 text-[12px] font-medium transition ${
       on ? "border-accent bg-accent-soft text-accent" : "border-line text-ink-3 hover:text-ink"
@@ -111,35 +137,65 @@ function FamilyGrid() {
           </button>
         ))}
       </div>
-      {visible.length === 0 && <p className="py-4 text-center text-[12px] text-ink-3">No family matches “{query}”.</p>}
-      {GROUPS.map((g) => {
-        const list = visible.filter((f) => f.group === g);
-        if (!list.length) return null;
-        return (
-          <div key={g} className="mb-2">
-            {group === "all" && <h3 className="mb-1.5 text-[12px] text-ink-3">{cap(g)}</h3>}
-            <div className="grid grid-cols-3 gap-2" role="group" aria-label={`${cap(g)} families`}>
-              {list.map((f) => {
-                const on = f.id === family;
-                return (
-                  <button
-                    key={f.id}
-                    aria-pressed={on}
-                    title={f.name}
-                    onClick={() => setFamily(f.id)}
-                    className={`group flex flex-col items-center gap-1 rounded-lg border p-1.5 transition ${
-                      on ? "border-accent bg-accent-soft text-accent" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
-                    }`}
-                  >
-                    <FamilyIcon id={f.id} className="aspect-square w-full transition group-hover:scale-105" />
-                    <span className="w-full truncate text-center text-[12px] leading-tight">{f.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onScroll={updateEdges}
+          role="region"
+          aria-label="Family list"
+          className="relative max-h-[248px] overflow-y-auto overscroll-contain rounded-lg md:max-h-[312px]"
+        >
+          {visible.length === 0 && <p className="py-4 text-center text-[12px] text-ink-3">No family matches “{query}”.</p>}
+          {GROUPS.map((g) => {
+            const list = visible.filter((f) => f.group === g);
+            if (!list.length) return null;
+            return (
+              <div key={g} className="pb-2">
+                {group === "all" && (
+                  <h3 className="sticky top-0 z-[1] -mx-0.5 mb-1 bg-panel/95 px-0.5 py-1 text-[12px] font-medium text-ink-3 backdrop-blur">
+                    {cap(g)} <span className="tabular-nums opacity-80">· {list.length}</span>
+                  </h3>
+                )}
+                <div className="grid grid-cols-3 gap-1.5" role="group" aria-label={`${cap(g)} families`}>
+                  {list.map((f) => {
+                    const on = f.id === family;
+                    return (
+                      <button
+                        key={f.id}
+                        data-family={f.id}
+                        aria-pressed={on}
+                        title={f.name}
+                        onClick={() => setFamily(f.id)}
+                        className={`group flex flex-col items-center gap-1 rounded-lg border px-1.5 pt-2 pb-1.5 transition ${
+                          on ? "border-accent bg-accent-soft text-accent" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink"
+                        }`}
+                      >
+                        <FamilyIcon id={f.id} className="h-11 w-11 transition group-hover:scale-105" />
+                        <span className="w-full truncate text-center text-[12px] leading-tight">{f.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Scroll cues: fade edges + a hint while more families sit below. */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 top-0 h-5 rounded-t-lg bg-gradient-to-b from-panel to-transparent transition-opacity ${
+            edges.top ? "opacity-0" : "opacity-100"
+          }`}
+        />
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 bottom-0 flex h-10 items-end justify-center rounded-b-lg bg-gradient-to-t from-panel via-panel/80 to-transparent pb-1 transition-opacity ${
+            edges.bottom ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[12px] text-ink-3 shadow-sm">More below ↓</span>
+        </div>
+      </div>
     </div>
   );
 }
