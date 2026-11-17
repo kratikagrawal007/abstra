@@ -18,6 +18,9 @@ interface StudioState {
   favorites: Settings[];
   lastEdit: number;
   toast: string | null;
+  /** Animation preview playing (only matters when settings.anim !== "none"). */
+  playing: boolean;
+  setPlaying(v: boolean): void;
 
   hydrate(initial: Settings | null): void;
   update(patch: Partial<Settings>): void;
@@ -79,6 +82,10 @@ export const useStudio = create<StudioState>((set, get) => {
     favorites: [],
     lastEdit: 0,
     toast: null,
+    playing: true,
+    setPlaying(v) {
+      set({ playing: v });
+    },
 
     hydrate(initial) {
       const settings = initial ?? DEFAULT_SETTINGS;

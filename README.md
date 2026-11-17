@@ -4,6 +4,17 @@ Browser-based studio for abstract marks, shapes and line art. 54 shape families,
 
 **Live:** https://abstra-shape.vercel.app
 
+## Features
+
+- 54 shape families in five styles (outline, solid, double, ribbon, dashed); seeded variations; undo/redo, recents and favourites
+- Colour: 12 curated palettes with shuffle, linear/radial gradient fills, and per-layer colours
+- Composition: layers, rotated copies, aspect, overlays
+- Export: SVG, PNG (1024–4096 px), clipboard, and **outlined SVG** where every stroke, dash and cut becomes a filled shape (for logo tools and cutters)
+- Animation: spin, phase or warp loops with live preview; export as animated SVG (no JS needed) or video (WebM, MP4 on Safari)
+- Batch: 12/24/48 variations as a ZIP of SVG/PNG plus `links.txt` with a share link for each
+- Embed: `/embed?<share params>` renders just the artwork (animated if set); "Copy embed code" gives an iframe snippet
+- Every setting lives in the URL, so any design is a shareable link
+
 ## Develop
 
 Requires Node 20.9+ (`.nvmrc` pins 22).
@@ -44,6 +55,7 @@ Lighthouse on the production build (served with gzip): mobile Performance 97, de
   - `rng.ts` FNV-1a + Mulberry32 · `geometry.ts` helpers · `render.ts` fit/styles/layers/copies/overlay → SVG
   - `families/` shape generators, registered in `families/index.ts`
   - `settings.ts` limits/sanitize · `seed.ts` variations · `url-state.ts` versioned short keys · `export.ts` SVG/PNG · `thumbs.ts`
+  - `palettes.ts` colour sets · `animate.ts` frames + animated SVG · `outline.ts` stroke-to-fill via Clipper (lazy-loaded)
 - `src/store/studio.ts`: Zustand store with settings, undo/redo, recent, favourites
 - `src/ui/`: Light studio UI (sidebar tabs, family search, artboard, toolbar, mobile sheet)
 - `src/app/`: page, metadata, `og.png` + `apple-touch-icon.png` (generated at build from the engine), manifest, robots, sitemap, thumbnails route
@@ -55,4 +67,4 @@ Lighthouse on the production build (served with gzip): mobile Performance 97, de
 
 ## Shortcuts
 
-`R`/`Space` randomize · `[` `]` previous/next family · `1`–`5` style · `F` save · `⌘Z` / `⇧⌘Z` undo/redo · `⌘S` download SVG · `?` help
+`R`/`Space` randomize · `[` `]` previous/next family · `1`–`5` style · `F` save · `P` play/pause animation · `⌘Z` / `⇧⌘Z` undo/redo · `⌘S` download SVG · `?` help

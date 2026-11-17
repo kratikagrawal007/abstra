@@ -12,5 +12,8 @@
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
+# The editor must not be framed; /embed is meant to be.
+/
+  Content-Security-Policy: frame-ancestors 'none'

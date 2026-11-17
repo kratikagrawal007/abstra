@@ -14,6 +14,11 @@ const KEYS: Record<keyof Settings, string> = {
   warp: "wp",
   stroke: "sw",
   color: "c",
+  color2: "c2",
+  color3: "c3",
+  fill: "fl",
+  gradientAngle: "ga",
+  layerColors: "lc",
   background: "bg",
   cap: "cap",
   layers: "ly",
@@ -26,6 +31,8 @@ const KEYS: Record<keyof Settings, string> = {
   overlayRotation: "ovr",
   transparent: "tr",
   size: "px",
+  anim: "an",
+  animDur: "ad",
 };
 
 export function encodeSettings(s: Settings): string {

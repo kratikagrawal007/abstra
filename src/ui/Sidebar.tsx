@@ -3,8 +3,22 @@ import { useEffect, useState } from "react";
 import { useStudio } from "@/store/studio";
 import { FAMILIES, getFamily } from "@/engine/families";
 import { DEFAULT_SETTINGS, LIMITS, type NumericKey } from "@/engine/settings";
-import { CAPS, GROUPS, PNG_SIZES, STYLES, type Settings } from "@/engine/types";
-import { copyPng, copySvg, downloadPng, downloadSvg } from "@/engine/export";
+import { ANIMS, CAPS, FILLS, GROUPS, PNG_SIZES, STYLES, type Settings } from "@/engine/types";
+import { PALETTES, activePalette, paletteColors } from "@/engine/palettes";
+import {
+  batchZip,
+  copyPng,
+  copySvg,
+  downloadAnimatedSvg,
+  downloadBlob,
+  downloadOutlinedSvg,
+  downloadPng,
+  downloadSvg,
+  downloadVideo,
+  embedCode,
+  videoFormat,
+} from "@/engine/export";
+import { encodeSettings } from "@/engine/url-state";
 import { ColorField, Section, Segmented, SelectField, Slider, Toggle } from "./controls";
 import { Icon } from "./icons";
 import { LOGO_PATHS } from "@/brand";
@@ -165,22 +179,100 @@ function ShapeTab() {
   );
 }
 
+function PalettePicker() {
+  const st = useStudio((x) => x.settings);
+  const update = useStudio((x) => x.update);
+  const active = activePalette(st);
+  return (
+    <div className="py-1.5">
+      <div className="mb-1.5 flex items-center justify-between text-[13px]">
+        <span className="text-ink-2">Palette{active ? <span className="text-ink-3"> · {active.name}</span> : null}</span>
+        <button
+          onClick={() => {
+            const pool = PALETTES.filter((p) => p !== active);
+            update(paletteColors(pool[Math.floor(Math.random() * pool.length)]));
+          }}
+          className="flex min-h-[26px] items-center gap-1 rounded-md px-2 text-[12px] font-medium text-accent hover:bg-accent-soft"
+        >
+          <Icon name="dice" size={14} /> Shuffle
+        </button>
+      </div>
+      <div className="grid grid-cols-6 gap-1.5" role="group" aria-label="Palettes">
+        {PALETTES.map((p) => {
+          const on = p === active;
+          return (
+            <button
+              key={p.name}
+              title={p.name}
+              aria-label={`${p.name} palette`}
+              aria-pressed={on}
+              onClick={() => update(paletteColors(p))}
+              className={`relative flex h-9 items-center justify-center gap-0.5 rounded-lg border transition hover:scale-105 ${
+                on ? "border-accent ring-2 ring-accent-soft" : "border-line"
+              }`}
+              style={{ background: p.background }}
+            >
+              {[p.color, p.color2, p.color3].map((c, i) => (
+                <span key={i} className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />
+              ))}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FinishTab() {
   const s = useStudio((st) => st.settings);
   const update = useStudio((st) => st.update);
+  const usesC2 = s.fill !== "flat" || s.layerColors;
   return (
-    <Section title="Finish">
-      <NumberSlider k="stroke" label="Stroke" />
-      <ColorField label="Ink" value={s.color} onChange={(v) => update({ color: v })} />
-      <ColorField label="Background" value={s.background} onChange={(v) => update({ background: v })} />
-      <Segmented label="Line ends" value={s.cap} options={CAPS.map((v) => ({ value: v, label: cap(v) }))} onChange={(v) => update({ cap: v })} />
-      <button
-        onClick={() => update({ color: s.background, background: s.color })}
-        className="mt-2 w-full rounded-lg border border-line py-1.5 text-[12px] text-ink-2 hover:text-ink"
-      >
-        Swap ink and background
-      </button>
-    </Section>
+    <>
+      <Section title="Colour">
+        <PalettePicker />
+        <ColorField label="Ink" value={s.color} onChange={(v) => update({ color: v })} />
+        <ColorField label="Background" value={s.background} onChange={(v) => update({ background: v })} />
+        <button
+          onClick={() => update({ color: s.background, background: s.color })}
+          className="mt-1 min-h-[30px] w-full rounded-lg border border-line text-[12px] text-ink-2 hover:text-ink"
+        >
+          Swap ink and background
+        </button>
+      </Section>
+      <Section title="Fill">
+        <Segmented
+          label="Ink fill"
+          value={s.fill}
+          options={FILLS.map((v) => ({ value: v, label: cap(v) }))}
+          onChange={(v) => update({ fill: v })}
+        />
+        {s.layerColors && s.fill !== "flat" && (
+          <p className="pb-1 text-[12px] text-ink-3">Layer colours are on, so each layer uses a flat colour.</p>
+        )}
+        {s.fill === "linear" && <NumberSlider k="gradientAngle" label="Gradient angle" unit="°" />}
+        {usesC2 && <ColorField label="Colour 2" value={s.color2} onChange={(v) => update({ color2: v })} />}
+        {s.layerColors && <ColorField label="Colour 3" value={s.color3} onChange={(v) => update({ color3: v })} />}
+      </Section>
+      <Section title="Line">
+        <NumberSlider k="stroke" label="Stroke" />
+        <Segmented label="Line ends" value={s.cap} options={CAPS.map((v) => ({ value: v, label: cap(v) }))} onChange={(v) => update({ cap: v })} />
+      </Section>
+    </>
+  );
+}
+
+function LayerColorsToggle() {
+  const on = useStudio((x) => x.settings.layerColors);
+  const layers = useStudio((x) => x.settings.layers);
+  const update = useStudio((x) => x.update);
+  return (
+    <Toggle
+      label="Colour each layer"
+      hint={layers > 1 ? "Cycles ink → colour 2 → colour 3 (set in Finish)" : "Add a second layer to see it"}
+      checked={on}
+      onChange={(v) => update(v && layers < 2 ? { layerColors: true, layers: 3 } : { layerColors: v })}
+    />
   );
 }
 
@@ -192,6 +284,7 @@ function ComposeTab() {
       <Section title="Repeat">
         <NumberSlider k="layers" label="Layers" />
         <NumberSlider k="spacing" label="Layer spacing" />
+        <LayerColorsToggle />
         <NumberSlider k="copies" label="Rotated copies" />
         <NumberSlider k="rotation" label="Rotation" unit="°" />
         <NumberSlider k="aspect" label="Aspect" />
@@ -214,39 +307,190 @@ function ComposeTab() {
   );
 }
 
-function ExportTab() {
+const BTN = "flex min-h-[38px] w-full items-center justify-center gap-2 rounded-lg px-3 text-[13px] font-medium transition disabled:opacity-50";
+const BTN_PRIMARY = `${BTN} bg-accent text-on-accent hover:opacity-90`;
+const BTN_SECONDARY = `${BTN} border border-line text-ink hover:bg-panel-2`;
+
+/** Runs an async export, showing progress text on the button and a toast at the end. */
+function useTask() {
+  const notify = useStudio((st) => st.notify);
+  const [busy, setBusy] = useState<string | null>(null);
+  const run = async (label: string, job: (progress: (text: string) => void) => Promise<string>) => {
+    if (busy) return;
+    setBusy(label);
+    try {
+      notify(await job((text) => setBusy(text)));
+    } catch (e) {
+      notify(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+  return { busy, run };
+}
+
+function ImageExport() {
   const s = useStudio((st) => st.settings);
   const update = useStudio((st) => st.update);
-  const notify = useStudio((st) => st.notify);
-  const btn = "flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-medium transition";
+  const { busy, run } = useTask();
   return (
-    <Section title="Export">
+    <Section title="Image">
       <Toggle label="Transparent background" hint="Applies to SVG and PNG" checked={s.transparent} onChange={(v) => update({ transparent: v })} />
       <Segmented label="PNG size" value={s.size} options={PNG_SIZES.map((v) => ({ value: v, label: `${v}px` }))} onChange={(v) => update({ size: v })} />
-      <div className="mt-3 space-y-2">
-        <button className={`${btn} bg-accent text-on-accent hover:opacity-90`} onClick={() => (downloadSvg(s), notify("SVG downloaded"))}>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button className={`${BTN_PRIMARY} col-span-2`} onClick={() => run("SVG", async () => (downloadSvg(s), "SVG downloaded"))}>
           <Icon name="download" size={16} /> Download SVG
         </button>
-        <button
-          className={`${btn} border border-line text-ink hover:bg-panel-2`}
-          onClick={() => downloadPng(s).then(() => notify(`PNG ${s.size}px downloaded`), () => notify("PNG export failed"))}
-        >
-          <Icon name="download" size={16} /> Download PNG
+        <button className={BTN_SECONDARY} disabled={!!busy} onClick={() => run("PNG…", async () => (await downloadPng(s), `PNG ${s.size}px downloaded`))}>
+          <Icon name="download" size={16} /> PNG
         </button>
         <button
-          className={`${btn} border border-line text-ink hover:bg-panel-2`}
-          onClick={() => copySvg(s).then(() => notify("SVG copied"), () => notify("Clipboard blocked"))}
+          className={BTN_SECONDARY}
+          disabled={!!busy}
+          title="Every stroke, dash and cut becomes a filled shape, for logo tools and cutters"
+          onClick={() => run("Outlining…", async () => (await downloadOutlinedSvg(s), "Outlined SVG downloaded"))}
         >
-          <Icon name="copy" size={16} /> Copy SVG code
+          <Icon name="download" size={16} /> {busy === "Outlining…" ? busy : "Outlined SVG"}
         </button>
-        <button
-          className={`${btn} border border-line text-ink hover:bg-panel-2`}
-          onClick={() => copyPng(s).then(() => notify("PNG copied"), () => notify("PNG copy not supported here"))}
-        >
-          <Icon name="copy" size={16} /> Copy PNG image
+        <button className={BTN_SECONDARY} onClick={() => run("copy", async () => (await copySvg(s), "SVG copied"))}>
+          <Icon name="copy" size={16} /> Copy SVG
+        </button>
+        <button className={BTN_SECONDARY} onClick={() => run("copy", async () => (await copyPng(s), "PNG copied"))}>
+          <Icon name="copy" size={16} /> Copy PNG
         </button>
       </div>
+      <p className="mt-2 text-[12px] text-ink-3">Outlined SVG turns strokes into filled shapes, ready for logo work.</p>
     </Section>
+  );
+}
+
+function AnimationExport() {
+  const s = useStudio((st) => st.settings);
+  const update = useStudio((st) => st.update);
+  const { busy, run } = useTask();
+  const canRecord = typeof window !== "undefined" && videoFormat() !== null;
+  return (
+    <Section title="Animation">
+      <Segmented label="Animate" value={s.anim} options={ANIMS.map((v) => ({ value: v, label: cap(v) }))} onChange={(v) => update({ anim: v })} />
+      {s.anim !== "none" && (
+        <>
+          <NumberSlider k="animDur" label="Loop length" unit="s" />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button className={BTN_SECONDARY} disabled={!!busy} onClick={() => run("SVG…", async () => (await downloadAnimatedSvg(s), "Animated SVG downloaded"))}>
+              <Icon name="download" size={16} /> Animated SVG
+            </button>
+            <button
+              className={BTN_SECONDARY}
+              disabled={!!busy || !canRecord}
+              title={canRecord ? "Records one loop in real time" : "This browser can't record video"}
+              onClick={() =>
+                run("Recording…", async (progress) => {
+                  await downloadVideo(s, (p) => progress(`Recording ${Math.round(p * 100)}%`));
+                  return "Video downloaded";
+                })
+              }
+            >
+              <Icon name="download" size={16} /> {busy?.startsWith("Recording") ? busy : "Video"}
+            </button>
+          </div>
+          <p className="mt-2 text-[12px] text-ink-3">Video records one {s.animDur}s loop at 1080px in real time.</p>
+        </>
+      )}
+    </Section>
+  );
+}
+
+function BatchExport() {
+  const s = useStudio((st) => st.settings);
+  const { busy, run } = useTask();
+  const [count, setCount] = useState<12 | 24 | 48>(12);
+  const [scope, setScope] = useState<"family" | "all">("family");
+  const [format, setFormat] = useState<"svg" | "png" | "both">("svg");
+  const [outlined, setOutlined] = useState(false);
+  return (
+    <Section title="Batch">
+      <Segmented label="Variations" value={count} options={[12, 24, 48].map((v) => ({ value: v as 12 | 24 | 48, label: String(v) }))} onChange={setCount} />
+      <Segmented
+        label="Families"
+        value={scope}
+        options={[
+          { value: "family", label: "This family" },
+          { value: "all", label: "Any family" },
+        ]}
+        onChange={setScope}
+      />
+      <Segmented
+        label="Format"
+        value={format}
+        options={[
+          { value: "svg", label: "SVG" },
+          { value: "png", label: `PNG ${s.size}` },
+          { value: "both", label: "Both" },
+        ]}
+        onChange={setFormat}
+      />
+      {format !== "png" && <Toggle label="Outline strokes in SVGs" checked={outlined} onChange={setOutlined} />}
+      <button
+        className={`${BTN_PRIMARY} mt-2`}
+        disabled={!!busy}
+        onClick={() =>
+          run("Starting…", async (progress) => {
+            const blob = await batchZip(
+              s,
+              {
+                count,
+                sameFamily: scope === "family",
+                svg: format !== "png",
+                png: format !== "svg",
+                outlined,
+                shareBase: `${location.origin}/`,
+              },
+              (done, total) => progress(`Building ${done}/${total}…`),
+            );
+            downloadBlob(blob, `abstra-batch-${count}.zip`);
+            return `${count} variations downloaded`;
+          })
+        }
+      >
+        <Icon name="download" size={16} /> {busy ?? `Download ${count} as ZIP`}
+      </button>
+      <p className="mt-2 text-[12px] text-ink-3">Uses your current colours and finish. The ZIP includes links.txt with a share link for each.</p>
+    </Section>
+  );
+}
+
+function EmbedExport() {
+  const s = useStudio((st) => st.settings);
+  const notify = useStudio((st) => st.notify);
+  const [size, setSize] = useState<240 | 400 | 600>(400);
+  const code = () => embedCode(location.origin, encodeSettings(s), size);
+  return (
+    <Section title="Embed">
+      <Segmented label="Size" value={size} options={[240, 400, 600].map((v) => ({ value: v as 240 | 400 | 600, label: `${v}px` }))} onChange={setSize} />
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button
+          className={BTN_SECONDARY}
+          onClick={() => navigator.clipboard.writeText(code()).then(() => notify("Embed code copied"), () => notify("Clipboard blocked"))}
+        >
+          <Icon name="copy" size={16} /> Copy embed code
+        </button>
+        <a className={BTN_SECONDARY} href={`/embed?${encodeSettings(s)}`} target="_blank" rel="noopener">
+          <Icon name="link" size={16} /> Open embed
+        </a>
+      </div>
+      <p className="mt-2 text-[12px] text-ink-3">An iframe of just the artwork. Animations play in the embed too.</p>
+    </Section>
+  );
+}
+
+function ExportTab() {
+  return (
+    <>
+      <ImageExport />
+      <AnimationExport />
+      <BatchExport />
+      <EmbedExport />
+    </>
   );
 }
 

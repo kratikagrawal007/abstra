@@ -170,3 +170,11 @@ kbd {
   text-align: center;
   display: inline-block;
 }
+
+@keyframes spin-art {
+  to { transform: rotate(360deg); }
+}
+.spin-art > svg {
+  animation: spin-art var(--spin-dur, 6s) linear infinite;
+  transform-origin: 50% 50%;
+}

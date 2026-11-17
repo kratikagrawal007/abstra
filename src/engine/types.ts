@@ -16,6 +16,12 @@ export type Style = (typeof STYLES)[number];
 export const CAPS = ["round", "square", "butt"] as const;
 export type Cap = (typeof CAPS)[number];
 
+export const FILLS = ["flat", "linear", "radial"] as const;
+export type FillMode = (typeof FILLS)[number];
+
+export const ANIMS = ["none", "spin", "phase", "warp"] as const;
+export type AnimMode = (typeof ANIMS)[number];
+
 export const PNG_SIZES = [1024, 2048, 4096] as const;
 export type PngSize = (typeof PNG_SIZES)[number];
 
@@ -32,6 +38,13 @@ export interface Settings {
   warp: number;
   stroke: number;
   color: string;
+  /** Second and third palette colours: used by gradients and per-layer colours. */
+  color2: string;
+  color3: string;
+  fill: FillMode;
+  gradientAngle: number;
+  /** Colour each layer with color → color2 → color3 instead of one ink. */
+  layerColors: boolean;
   background: string;
   cap: Cap;
   layers: number;
@@ -44,6 +57,9 @@ export interface Settings {
   overlayRotation: number;
   transparent: boolean;
   size: PngSize;
+  anim: AnimMode;
+  /** Seconds per animation loop. */
+  animDur: number;
 }
 
 export interface GenParams {

@@ -37,7 +37,7 @@ const ribbonWidth = (w: number) => Math.max(4, w * 2.2);
 /** Scale + centre shapes into the box. Radial fit when the art will be rotated. */
 function fit(shapes: Shape[], s: Settings, area: number): Shape[] {
   const b = bounds(shapes);
-  const radial = s.copies > 1 || s.rotation % 90 !== 0;
+  const radial = s.copies > 1 || s.rotation % 90 !== 0 || s.anim === "spin";
   const room = area / 2 - inkWidth(s) / 2;
   let scale: number;
   if (radial) scale = room / Math.max(1e-6, maxRadius(shapes, b.cx, b.cy));
@@ -71,15 +71,32 @@ function strokeAttrs(s: Settings, width: number, color: string) {
 const round = (n: number) => Math.round(n * 100) / 100;
 const BIG = `x="${-BOX}" y="${-BOX}" width="${BOX * 3}" height="${BOX * 3}"`;
 
-function styleMarkup(shapes: Shape[], s: Settings, id: string): string {
+/** Paint for the ink: a flat colour or a gradient defined once in <defs>. */
+export function makePaint(s: Settings, id: string): { defs: string; paint: string } {
+  if (s.fill === "flat" || s.layerColors) return { defs: "", paint: s.color };
+  const gid = `${id}-grad`;
+  const stops = `<stop offset="0" stop-color="${s.color}"/><stop offset="1" stop-color="${s.color2}"/>`;
+  if (s.fill === "radial")
+    return { defs: `<radialGradient id="${gid}" gradientUnits="userSpaceOnUse" cx="${C}" cy="${C}" r="${C}">${stops}</radialGradient>`, paint: `url(#${gid})` };
+  const a = deg(s.gradientAngle);
+  const dx = Math.cos(a) * C, dy = Math.sin(a) * C;
+  return {
+    defs: `<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${round(C - dx)}" y1="${round(C - dy)}" x2="${round(C + dx)}" y2="${round(C + dy)}">${stops}</linearGradient>`,
+    paint: `url(#${gid})`,
+  };
+}
+
+export const layerColor = (s: Settings, i: number) => [s.color, s.color2, s.color3][i % 3];
+
+function styleMarkup(shapes: Shape[], s: Settings, id: string, paint: string): string {
   const w = s.stroke;
   const d = pathData(shapes);
   switch (s.style) {
     case "outline":
-      return `<path d="${d}" ${strokeAttrs(s, w, s.color)}/>`;
+      return `<path d="${d}" ${strokeAttrs(s, w, paint)}/>`;
     case "dashed": {
-      const dw = s.cap === "butt" ? w : w * 1.6;
-      return `<path d="${d}" ${strokeAttrs(s, w, s.color)} stroke-dasharray="${round(w * 3)} ${round(w * 2 + dw)}"/>`;
+      const [on, off] = dashPattern(s);
+      return `<path d="${d}" ${strokeAttrs(s, w, paint)} stroke-dasharray="${round(on)} ${round(off)}"/>`;
     }
     case "solid": {
       const nonzero = getFamily(s.family).fill === "nonzero";
@@ -87,15 +104,15 @@ function styleMarkup(shapes: Shape[], s: Settings, id: string): string {
       if (nonzero) closed = closed.map(orient);
       const open = shapes.filter((x) => !x.closed);
       const rule = nonzero ? "nonzero" : "evenodd";
-      let out = closed.length ? `<path d="${pathData(closed)}" fill="${s.color}" fill-rule="${rule}"/>` : "";
-      if (open.length) out += `<path d="${pathData(open)}" ${strokeAttrs(s, Math.max(w, 2), s.color)}/>`;
+      let out = closed.length ? `<path d="${pathData(closed)}" fill="${paint}" fill-rule="${rule}"/>` : "";
+      if (open.length) out += `<path d="${pathData(open)}" ${strokeAttrs(s, Math.max(w, 2), paint)}/>`;
       return out;
     }
     case "double":
       return (
         `<mask id="${id}-dbl" maskUnits="userSpaceOnUse" ${BIG}>` +
         `<path d="${d}" ${strokeAttrs(s, w * 3, "#fff")}/><path d="${d}" ${strokeAttrs(s, w, "#000")}/></mask>` +
-        `<rect ${BIG} fill="${s.color}" mask="url(#${id}-dbl)"/>`
+        `<rect ${BIG} fill="${paint}" mask="url(#${id}-dbl)"/>`
       );
     case "ribbon": {
       // Each band knocks a gap out of earlier bands, giving an over/under weave.
@@ -103,15 +120,53 @@ function styleMarkup(shapes: Shape[], s: Settings, id: string): string {
       const layers = shapes
         .map((x) => {
           const pd = toPathData(x, DECIMALS);
-          return `<path d="${pd}" ${strokeAttrs(s, rw * 1.9, "#000")}/><path d="${pd}" ${strokeAttrs(s, rw, "#fff")}/>`;
+          return `<path d="${pd}" ${strokeAttrs(s, rw * RIBBON_GAP * 2, "#000")}/><path d="${pd}" ${strokeAttrs(s, rw, "#fff")}/>`;
         })
         .join("");
       return (
         `<mask id="${id}-rib" maskUnits="userSpaceOnUse" ${BIG}>${layers}</mask>` +
-        `<rect ${BIG} fill="${s.color}" mask="url(#${id}-rib)"/>`
+        `<rect ${BIG} fill="${paint}" mask="url(#${id}-rib)"/>`
       );
     }
   }
+}
+
+/** Dash on/off lengths in user units. Round/square caps grow each dash, so the gap compensates. */
+export function dashPattern(s: Settings): [number, number] {
+  const w = s.stroke;
+  const capGrow = s.cap === "butt" ? w : w * 1.6;
+  return [w * 3, w * 2 + capGrow];
+}
+export const RIBBON_GAP = 0.95;
+
+export interface Scene {
+  /** Fitted layers, largest first. Odd layers are pre-inverted unless drawn in separate colours. */
+  layers: Shape[][];
+  overlay: Shape[] | null;
+  overlayWidth: number;
+}
+
+/** Geometry for a settings object: generation, aspect, fitting, layers and overlay. */
+export function buildScene(s: Settings): Scene {
+  const params: GenParams = { frequency: s.frequency, detail: s.detail, phase: s.phase, warp: s.warp };
+  let base = generate(s.family, params, s.seed);
+  if (s.aspect !== 1) base = mapShapes(base, (p) => ({ x: p.x * s.aspect, y: p.y }));
+  const fitted = fit(base, s, BOX - PAD * 2);
+  const separate = s.layerColors && s.layers > 1;
+  const layers: Shape[][] = [];
+  for (let i = 0; i < s.layers; i++) {
+    const layer = scaleAbout(fitted, Math.max(0.08, 1 - i * s.spacing * 1.6));
+    // Odd layers invert so stacked single-colour solid layers read as rings, not one blob.
+    layers.push(i % 2 && !separate ? layer.map((x) => ({ ...x, hole: !x.hole })) : layer);
+  }
+  let overlay: Shape[] | null = null;
+  if (s.overlay !== "none") {
+    const of = getFamily(s.overlay);
+    const op: GenParams = { ...of.defaults, phase: 0 };
+    overlay = fit(generate(of.id, op, s.seed), { ...s, copies: 2 }, BOX - PAD * 2);
+    overlay = rotateAbout(scaleAbout(overlay, s.overlayScale), deg(s.overlayRotation));
+  }
+  return { layers, overlay, overlayWidth: Math.max(1, s.stroke * 0.8) };
 }
 
 export interface RenderOptions {
@@ -125,37 +180,29 @@ export interface RenderOptions {
   decimals?: number;
 }
 
-export function renderSvg(s: Settings, opts: RenderOptions = {}): string {
-  const id = opts.id ?? "sf";
-  DECIMALS = opts.decimals ?? 2;
-  const params: GenParams = { frequency: s.frequency, detail: s.detail, phase: s.phase, warp: s.warp };
-  let base = generate(s.family, params, s.seed);
-  if (s.aspect !== 1) base = mapShapes(base, (p) => ({ x: p.x * s.aspect, y: p.y }));
+/** The artwork group (no <svg> wrapper, no background): reused by animation frames. */
+export function renderArt(s: Settings, id: string, decimals = 2): { defs: string; body: string } {
+  DECIMALS = decimals;
+  const scene = buildScene(s);
+  const { defs, paint } = makePaint(s, id);
 
-  const fitted = fit(base, s, BOX - PAD * 2);
-  const layered: Shape[] = [];
-  for (let i = 0; i < s.layers; i++) {
-    const layer = scaleAbout(fitted, Math.max(0.08, 1 - i * s.spacing * 1.6));
-    // Odd layers invert so stacked solid layers read as rings, not one blob.
-    layered.push(...(i % 2 ? layer.map((x) => ({ ...x, hole: !x.hole })) : layer));
+  let art: string;
+  if (s.layerColors && s.layers > 1) {
+    art = scene.layers.map((layer, i) => styleMarkup(layer, s, `${id}-L${i}`, layerColor(s, i))).join("");
+  } else {
+    art = styleMarkup(scene.layers.flat(), s, id, paint);
   }
 
-  let art = styleMarkup(layered, s, id);
-
-  if (s.overlay !== "none") {
-    const of = getFamily(s.overlay);
-    const op: GenParams = { ...of.defaults, phase: 0 };
-    let ov = fit(generate(of.id, op, s.seed), { ...s, copies: 2 }, BOX - PAD * 2);
-    ov = rotateAbout(scaleAbout(ov, s.overlayScale), deg(s.overlayRotation));
-    const ow = Math.max(1, s.stroke * 0.8);
-    const od = pathData(ov);
+  if (scene.overlay) {
+    const od = pathData(scene.overlay);
+    const ow = scene.overlayWidth;
     if (s.style === "solid") {
       // On filled art the overlay reads best as a cut line.
       art =
         `<mask id="${id}-ov" maskUnits="userSpaceOnUse" ${BIG}><rect ${BIG} fill="#fff"/>` +
         `<path d="${od}" ${strokeAttrs(s, ow * 2, "#000")}/></mask><g mask="url(#${id}-ov)">${art}</g>`;
     } else {
-      art += `<path d="${od}" ${strokeAttrs(s, ow, s.color)}/>`;
+      art += `<path d="${od}" ${strokeAttrs(s, ow, paint)}/>`;
     }
   }
 
@@ -169,9 +216,20 @@ export function renderSvg(s: Settings, opts: RenderOptions = {}): string {
   } else {
     body = s.rotation ? `<g transform="rotate(${s.rotation} ${C} ${C})">${art}</g>` : art;
   }
+  return { defs, body };
+}
 
+export function svgWrap(inner: string, s: Settings, opts: RenderOptions): string {
   const showBg = opts.background ?? !s.transparent;
   const bg = showBg ? `<rect width="${BOX}" height="${BOX}" fill="${s.background}"/>` : "";
   const px = opts.px ?? BOX;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOX} ${BOX}" width="${px}" height="${px}">${bg}${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOX} ${BOX}" width="${px}" height="${px}">${bg}${inner}</svg>`;
 }
+
+export function renderSvg(s: Settings, opts: RenderOptions = {}): string {
+  const id = opts.id ?? "sf";
+  const { defs, body } = renderArt(s, id, opts.decimals ?? 2);
+  return svgWrap((defs ? `<defs>${defs}</defs>` : "") + body, s, opts);
+}
+
+export { C as CENTER, round as round2, ribbonWidth, strokeAttrs };

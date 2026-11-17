@@ -5,6 +5,7 @@ import { renderSvg } from "@/engine/render";
 import { decodeSettings, encodeSettings } from "@/engine/url-state";
 import { copySvg, downloadSvg } from "@/engine/export";
 import { getFamily } from "@/engine/families";
+import { frameSvg } from "@/engine/animate";
 import { STYLES } from "@/engine/types";
 import { Sidebar } from "./Sidebar";
 import { Thumb } from "./Thumb";
@@ -50,6 +51,8 @@ function useShortcuts(toggleHelp: () => void, closeHelp: () => void) {
         st.stepFamily(e.key === "]" ? 1 : -1);
       } else if (!mod && !typing && /^[1-5]$/.test(e.key)) {
         st.update({ style: STYLES[Number(e.key) - 1] });
+      } else if (!mod && !typing && e.key === "p") {
+        st.setPlaying(!st.playing);
       } else if (!mod && !typing && e.key === "?") {
         toggleHelp();
       } else if (e.key === "Escape") {
@@ -78,21 +81,84 @@ function Toast() {
   );
 }
 
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const on = () => setReduced(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return reduced;
+}
+
+const PREVIEW_FPS = 24;
+
 function Artboard() {
   const settings = useStudio((s) => s.settings);
-  const html = useMemo(() => renderSvg(settings, { id: "main", background: true }), [settings]);
+  const playing = useStudio((s) => s.playing);
+  const setPlaying = useStudio((s) => s.setPlaying);
+  const reduced = usePrefersReducedMotion();
+  // Background is painted by the container so a spinning preview never shows rotating corners.
+  const html = useMemo(() => renderSvg(settings, { id: "main", background: false }), [settings]);
+  const ref = useRef<HTMLDivElement>(null);
+  const hasAnim = settings.anim !== "none";
+  const animating = hasAnim && playing && !reduced;
+
+  // Phase / warp: redraw frames directly into the DOM (no React re-render per frame).
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !animating || settings.anim === "spin") return;
+    let raf = 0;
+    let last = -1;
+    const start = performance.now();
+    const total = settings.animDur * 1000;
+    const loop = (now: number) => {
+      const t = ((now - start) % total) / total;
+      const k = Math.floor(t * PREVIEW_FPS * settings.animDur);
+      if (k !== last) {
+        last = k;
+        el.innerHTML = frameSvg(settings, t, { id: "main", background: false });
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.innerHTML = html;
+    };
+  }, [animating, settings, html]);
+
   const f = getFamily(settings.family);
   return (
     <figure className="flex min-h-0 flex-1 flex-col items-center gap-2 px-4 pt-3 pb-2 md:gap-3 md:px-6 md:pt-5">
       {/* size container: the artboard is the largest square that fits */}
       <div className="grid min-h-0 w-full flex-1 place-items-center [container-type:size]">
-        <div
-          key={`${settings.seed}|${settings.family}`}
-          className="art-in thumb aspect-square w-[min(100cqw,100cqh,640px)] overflow-hidden rounded-2xl border border-line elev"
-          role="img"
-          aria-label={`${f.name} artwork, ${settings.style} style, seed ${settings.seed}`}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="relative aspect-square w-[min(100cqw,100cqh,640px)]">
+          <div
+            ref={ref}
+            key={`${settings.seed}|${settings.family}`}
+            className={`art-in thumb h-full w-full overflow-hidden rounded-2xl border border-line elev ${
+              animating && settings.anim === "spin" ? "spin-art" : ""
+            }`}
+            style={{ background: settings.background, ["--spin-dur" as string]: `${settings.animDur}s` }}
+            role="img"
+            aria-label={`${f.name} artwork, ${settings.style} style, seed ${settings.seed}${hasAnim ? `, ${settings.anim} animation` : ""}`}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          {hasAnim && (
+            <button
+              onClick={() => setPlaying(!playing)}
+              aria-label={playing ? "Pause animation preview" : "Play animation preview"}
+              title={reduced ? "Reduced motion is on, so the preview stays still" : playing ? "Pause (P)" : "Play (P)"}
+              className="absolute right-3 bottom-3 flex h-9 items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 text-[12px] font-medium text-ink-2 elev hover:text-ink"
+            >
+              <span aria-hidden="true">{animating ? "❚❚" : "▶"}</span>
+              {settings.anim}
+            </button>
+          )}
+        </div>
       </div>
       <figcaption className="font-mono text-[12px] text-ink-3 max-md:hidden">
         {f.name} · {settings.style} · seed {settings.seed}
@@ -220,6 +286,7 @@ const SHORTCUTS: [string[], string][] = [
   [["]"], "Next family"],
   [["1", "–", "5"], "Outline · Solid · Double · Ribbon · Dashed"],
   [["F"], "Save / unsave favourite"],
+  [["P"], "Play / pause animation preview"],
   [["⌘", "Z"], "Undo"],
   [["⇧", "⌘", "Z"], "Redo"],
   [["⌘", "S"], "Download SVG"],
@@ -266,7 +333,20 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Dev-only: expose the engine for in-browser QA (pixel diffs etc). Removed from production builds. */
+function useDevHook() {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    Promise.all([import("@/engine/render"), import("@/engine/outline"), import("@/engine/settings"), import("@/engine/families"), import("@/engine/animate"), import("@/engine/export")]).then(
+      ([render, outline, settings, families, animate, exp]) => {
+        (window as unknown as { __abstraDev: unknown }).__abstraDev = { ...render, ...outline, ...settings, ...families, ...animate, ...exp };
+      },
+    );
+  }, []);
+}
+
 export function Studio() {
+  useDevHook();
   const [help, setHelp] = useState(false);
   const [sheet, setSheet] = useState(false);
   const toggleHelp = useCallback(() => setHelp((h) => !h), []);

@@ -1,4 +1,4 @@
-import { CAPS, PNG_SIZES, STYLES, type Settings } from "./types";
+import { ANIMS, CAPS, FILLS, PNG_SIZES, STYLES, type Settings } from "./types";
 import { FAMILY_IDS, getFamily } from "./families";
 
 export const LIMITS = {
@@ -14,6 +14,8 @@ export const LIMITS = {
   aspect: [0.5, 2, 0.05],
   overlayScale: [0.2, 1, 0.01],
   overlayRotation: [0, 360, 1],
+  gradientAngle: [0, 360, 1],
+  animDur: [2, 20, 0.5],
 } as const satisfies Record<string, readonly [number, number, number]>;
 
 export type NumericKey = keyof typeof LIMITS;
@@ -28,6 +30,11 @@ export const DEFAULT_SETTINGS: Settings = {
   warp: 0.6,
   stroke: 3,
   color: "#1c1b22",
+  color2: "#4f46e5",
+  color3: "#e4572e",
+  fill: "flat",
+  gradientAngle: 45,
+  layerColors: false,
   background: "#ffffff",
   cap: "round",
   layers: 1,
@@ -40,6 +47,8 @@ export const DEFAULT_SETTINGS: Settings = {
   overlayRotation: 0,
   transparent: true,
   size: 2048,
+  anim: "none",
+  animDur: 6,
 };
 
 const snap = (v: number, step: number) => Math.round(v / step) * step;
@@ -64,6 +73,11 @@ export function sanitize(input: Partial<Settings>): Settings {
   if (s.overlay !== "none" && !FAMILY_IDS.includes(s.overlay)) s.overlay = "none";
   if (!HEX.test(s.color)) s.color = DEFAULT_SETTINGS.color;
   if (!HEX.test(s.background)) s.background = DEFAULT_SETTINGS.background;
+  if (!HEX.test(s.color2)) s.color2 = DEFAULT_SETTINGS.color2;
+  if (!HEX.test(s.color3)) s.color3 = DEFAULT_SETTINGS.color3;
+  if (!FILLS.includes(s.fill)) s.fill = DEFAULT_SETTINGS.fill;
+  if (!ANIMS.includes(s.anim)) s.anim = DEFAULT_SETTINGS.anim;
+  s.layerColors = Boolean(s.layerColors);
   s.seed = String(s.seed || DEFAULT_SETTINGS.seed).slice(0, 64);
   s.transparent = Boolean(s.transparent);
   for (const key of Object.keys(LIMITS) as NumericKey[]) s[key] = clampNumber(key, Number(s[key]), s.family);
