@@ -2,7 +2,7 @@
 
 Browser-based studio for abstract marks, shapes and line art. 54 shape families, five styles, seeded variations, shareable URLs, SVG and PNG export. No account, no tracking; everything runs client-side.
 
-**Live:** https://abstra-omega.vercel.app
+**Live:** https://abstra-shape.vercel.app
 
 ## Develop
 
