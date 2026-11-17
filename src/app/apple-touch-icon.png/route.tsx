@@ -1,14 +1,15 @@
 import { ImageResponse } from "next/og";
-import { artDataUri } from "../brand-art";
+import { logoDataUri } from "@/brand";
 
 export const dynamic = "force-static";
 
 export function GET() {
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#4f46e5" }}>
+      <div style={{ width: "100%", height: "100%", display: "flex" }}>
+        {/* Full-bleed square tile: iOS applies its own corner mask. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={artDataUri("supershape", "solid", "#ffffff")} width={132} height={132} alt="" />
+        <img src={logoDataUri({ radius: 0, scale: 0.6 })} width={180} height={180} alt="" />
       </div>
     ),
     { width: 180, height: 180 },

@@ -3,6 +3,7 @@ import { SITE } from "@/site";
 import { FAMILY_COUNT } from "@/engine/families";
 import type { Style } from "@/engine/types";
 import { artDataUri, fontData } from "../brand-art";
+import { logoDataUri } from "@/brand";
 
 // Served as /og.png so static hosts send image/png (extensionless files often become octet-stream).
 export const dynamic = "force-static";
@@ -23,9 +24,8 @@ export async function GET() {
       <div style={{ width: "100%", height: "100%", display: "flex", background: "#f6f5f2", padding: 64, fontFamily: "Geist" }}>
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 480 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: 24, height: 24, background: "#fff", transform: "rotate(45deg)", borderRadius: 6 }} />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoDataUri()} width={56} height={56} alt="" />
             <div style={{ fontSize: 34, color: "#1c1b22" }}>{SITE.name}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

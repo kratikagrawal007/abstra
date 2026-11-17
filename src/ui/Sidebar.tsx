@@ -7,6 +7,7 @@ import { CAPS, GROUPS, PNG_SIZES, STYLES, type Settings } from "@/engine/types";
 import { copyPng, copySvg, downloadPng, downloadSvg } from "@/engine/export";
 import { ColorField, Section, Segmented, SelectField, Slider, Toggle } from "./controls";
 import { Icon } from "./icons";
+import { LOGO_PATHS } from "@/brand";
 
 const TABS = ["Shape", "Finish", "Compose", "Export"] as const;
 type Tab = (typeof TABS)[number];
@@ -303,9 +304,13 @@ export function Sidebar() {
 
 function Logo() {
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <rect width="28" height="28" rx="8" fill="var(--accent)" />
-      <path d="M14 6c2 4 6 6 8 8-2 2-6 4-8 8-2-4-6-6-8-8 2-2 6-4 8-8z" fill="#fff" />
+    <svg width="28" height="28" viewBox="0 0 256 256" aria-hidden="true">
+      <rect width="256" height="256" rx="60" fill="var(--accent)" />
+      <g transform="translate(48.64 48.64) scale(0.62)" fill="var(--on-accent)">
+        {LOGO_PATHS.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
     </svg>
   );
 }
