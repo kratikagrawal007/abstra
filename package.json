@@ -12,6 +12,7 @@
     "check": "tsc --noEmit && vitest run && next build"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "clipper-lib": "^6.4.2",
     "fflate": "^0.8.2",
     "geist": "^1.9.2",

@@ -1,6 +1,6 @@
 # Abstra
 
-Browser-based studio for abstract marks, shapes and line art. 54 shape families, five styles, seeded variations, shareable URLs, SVG and PNG export. No account, no tracking; everything runs client-side.
+Browser-based studio for abstract marks, shapes and line art. 54 shape families, five styles, seeded variations, shareable URLs, SVG and PNG export. No account needed; everything runs client-side. Page views are counted with cookieless Vercel Web Analytics (no personal data, no cookies).
 
 **Live:** https://abstra-shape.vercel.app
 
