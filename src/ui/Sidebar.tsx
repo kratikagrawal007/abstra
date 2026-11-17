@@ -615,7 +615,7 @@ function Logo() {
   return (
     <svg width="28" height="28" viewBox="0 0 256 256" aria-hidden="true">
       <rect width="256" height="256" rx="60" fill="var(--accent)" />
-      <g transform="translate(48.64 48.64) scale(0.62)" fill="var(--on-accent)">
+      <g transform="translate(48.64 48.64) scale(0.62)" fill="var(--logo-mark)" className="transition-[fill]">
         {LOGO_PATHS.map((d) => (
           <path key={d} d={d} />
         ))}
